@@ -7,9 +7,8 @@ pipeline {
 
 
     environment {
-        DOCKERHUB_USER = "encvr1"
-        IMAGE_NAME     = "backend-fastapi-gtp"
-        IMAGE_TAG      = "1.${BUILD_NUMBER}"
+        IMAGE_NAME = "backend-fastapi-gtp"
+        IMAGE_TAG  = "1.${BUILD_NUMBER}"
     }
 
     stages {
@@ -24,7 +23,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
