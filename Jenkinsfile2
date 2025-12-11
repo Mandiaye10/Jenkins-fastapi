@@ -1,0 +1,77 @@
+pipeline {
+    agent {
+        label 'agent-windows'  // ou 'linux' selon votre agent Jenkins
+    }
+
+
+    environment {
+        DOCKERHUB_USER = "encvr1"
+        IMAGE_NAME     = "backend-fastapi-gtp"
+        IMAGE_TAG      = "1.${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+       /*  stage('Install Dependencies') {
+            steps {
+                // Installer les dépendances directement avec pip
+                bat """
+                    python -m pip install --upgrade pip
+                    pip install -r requirements.txt
+                """
+            }
+        } */
+
+        stage('Run Unit Tests') {
+            steps {
+                bat """
+                   python -m venv venv
+                   call venv\\Scripts\\activate
+                   pip install --upgrade pip
+                   pip install -r requirements.txt
+                   pytest tests/unit --maxfail=1 --disable-warnings -q
+                """
+            }
+        }
+
+        stage('Run Integration Tests') {
+            steps {
+                bat """
+                   python -m venv venv
+                   call venv\\Scripts\\activate
+                   pip install --upgrade pip
+                   pip install -r requirements.txt
+                   pytest tests/integration --maxfail=1 --disable-warnings -q
+                """
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                bat "docker-compose down || true"
+                bat "docker-compose up -d --build"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Déploiement FastAPI réussi !"
+        }
+        failure {
+            echo "❌ Le pipeline a échoué, vérifiez les logs Jenkins."
+        }
+    }
+}

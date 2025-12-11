@@ -1,0 +1,87 @@
+pipeline {
+    agent {
+        label 'windows'  // ou 'linux'
+    }
+
+    environment {
+        DOCKERHUB_USER = "encvr1"
+        IMAGE_NAME     = "projet-backend"
+        IMAGE_TAG      = "1.${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+            }
+        }
+
+        // 🔹 Backend Unit Tests
+        stage('Backend Tests Unitaires') {
+            steps {
+                script {
+                    bat "mkdir reports || true"
+
+                    // Exécuter les tests unitaires dans Docker et générer un rapport HTML
+                    
+                     bat "pytest tests/unit --html=reports/unit-report.html --self-contained-html -q "
+                    
+                }
+                // Publier le rapport HTML dans Jenkins
+                publishHTML([
+                    reportDir: 'reports',
+                    reportFiles: 'unit-report.html',
+                    reportName: 'Backend Unit Tests',
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true
+                ])
+            }
+        }
+
+        // 🔹 Backend Integration Tests
+        stage('Backend Tests Intégration') {
+            steps {
+                script {
+                    bat "mkdir reports || true"
+
+                    // Exécuter les tests d'intégration dans Docker et générer un rapport HTML
+                    
+                    bat  "pytest tests/integration --html=reports/integration-report.html --self-contained-html -q "
+                    
+                }
+                publishHTML([
+                    reportDir: 'reports',
+                    reportFiles: 'integration-report.html',
+                    reportName: 'Backend Integration Tests',
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true
+                ])
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                bat "docker-compose down || true"
+                bat "docker-compose up -d --build"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Déploiement FastAPI réussi !"
+        }
+        failure {
+            echo "❌ Le pipeline a échoué, vérifiez les logs Jenkins."
+        }
+    }
+}
