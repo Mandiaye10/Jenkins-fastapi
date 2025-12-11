@@ -24,14 +24,14 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
         stage('Deploy with Docker Compose') {
             steps {
-                bat "docker-compose down || true"
-                bat "docker-compose up -d --build"
+                sh "docker-compose down || true"
+                sh "docker-compose up -d --build"
             }
         }
     }
